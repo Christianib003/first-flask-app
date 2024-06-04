@@ -1,0 +1,2 @@
+households = {}
+requests = {}
