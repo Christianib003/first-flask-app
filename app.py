@@ -16,3 +16,13 @@ households = [
         ]
     }
 ]
+
+@app.route("/households")
+def get_households():
+    """
+    Retrieves the list of households.
+    
+    Returns:
+        dict: A dictionary containing the list of households.
+    """
+    return {"households": households}
