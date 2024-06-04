@@ -1,32 +1,20 @@
-import uuid
-
-from flask import Flask, request
-from flask_smorest import abort
-from db import households, requests
-
+from flask import Flask
+from flask_smorest import Api
+from resources.household import household_blp
+from resources.request import request_blp
 
 app = Flask(__name__)
 
 
-@app.get("/households")
-def get_households():
-    pass
+app.config["PROPAGATE_EXCEPTIONS"] = True
+app.config["API_TITLE"] = "EchoTrack API"
+app.config["API_VERSION"] = "v1"
+app.config["OPENAPI_VERSION"] = "3.0.3"
+app.config["OPENAPI_URL_PREFIX"] = "/"
+app.config["OPENAPI_SWAGGER_UI_PATH"] = "/swagger-ui/api/docs"
+app.config["OPENAPI_SWAGGER_UI_URL"] = "https://cdn.jsdelivr.net/npm/swagger-ui-dist/"
 
-@app.get("/households/<string:household_id>")
-def get_household(household_id):
-    pass
+api = Api(app)
 
-
-@app.post("/households")
-def create_household():
-    pass
-
-
-@app.post("/requests")
-def create_request():
-    pass
-
-
-@app.get("/requests/<string:request_id>")
-def get_request(request_id):
-    pass
+api.register_blueprint(household_blp)
+api.register_blueprint(request_blp)

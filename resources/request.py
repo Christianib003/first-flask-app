@@ -12,7 +12,7 @@ request_blp = Blueprint(
     )
 
 
-request_blp.route("/requests")
+@request_blp.route("/requests")
 class Request(MethodView):
     def get(self, request_id):
         """

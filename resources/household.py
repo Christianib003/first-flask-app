@@ -2,7 +2,7 @@ import uuid
 from flask import request
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-from db import households, requests
+from db import households
 
 
 household_blp = Blueprint(
@@ -18,7 +18,7 @@ class HouseholdsList(MethodView):
     Represents a collection of households.
     """
 
-    def get(self, household_id):
+    def get(self):
         """
         Retrieves a list of all households.
         
