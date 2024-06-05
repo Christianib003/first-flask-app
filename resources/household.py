@@ -3,6 +3,7 @@ from flask import request
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from db import households
+from schemas import HouseholdSchema
 
 
 household_blp = Blueprint(
@@ -27,6 +28,7 @@ class HouseholdsList(MethodView):
         """
         return {"households": list(households.values())}
 
+    @household_blp.arguments(HouseholdSchema)
     def post(self):
         """
         Create a new household with the provided data.
@@ -40,15 +42,6 @@ class HouseholdsList(MethodView):
             if the household already exists.
         """
         household_data = request.get_json()
-        # Check if household_data contains the required keys
-        if(
-            "area" not in household_data
-            or "address" not in household_data
-        ):
-            abort(
-                400,
-                message="Household must include area and address"
-            )
         # Check if household_data["area"] is already in households
         for household_key in households.values():
             if(

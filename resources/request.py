@@ -3,6 +3,7 @@ from flask import request
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from db import households, requests
+from schemas import RequestSchema
 
 
 request_blp = Blueprint(
@@ -32,8 +33,8 @@ class Request(MethodView):
         except KeyError:
             abort(404, message="Request not found")
 
-
-    def post(self):
+    @request_blp.arguments(RequestSchema)
+    def post(self, request_data):
         """
         Create a new request with the provided data.
 
@@ -45,15 +46,6 @@ class Request(MethodView):
             the HTTP status code.
         """
         request_data = request.get_json()
-        # Check if request_data contains the required keys
-        if(
-            "household_id" not in request_data
-            or "amount" not in request_data
-        ):
-            abort(
-                400,
-                message="Request must include household_id and amount"
-            )
         # Check if request_data["household_id"] is already in requests
         for request_key in requests.values():
             if(
