@@ -2,9 +2,10 @@ import uuid
 from flask import request
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-from db import households, requests
+from models.request import RequestModel
 from schemas import RequestSchema
-
+from db import db
+from  sqlalchemy.exc import SQLAlchemyError
 
 request_blp = Blueprint(
     "requests",
@@ -13,8 +14,9 @@ request_blp = Blueprint(
     )
 
 
-@request_blp.route("/requests")
+@request_blp.route("/requests/<string:request_id>")
 class Request(MethodView):
+    @request_blp.response(200, RequestSchema)
     def get(self, request_id):
         """
         Retrieve a request by its ID.
@@ -28,10 +30,8 @@ class Request(MethodView):
         Raises:
             NotFound: If the request with the given ID is not found.
         """
-        try:
-            return requests[request_id]
-        except KeyError:
-            abort(404, message="Request not found")
+        req = RequestModel.query.get_or_404(request_id)
+        return req
 
     @request_blp.arguments(RequestSchema)
     def post(self, request_data):
@@ -45,26 +45,16 @@ class Request(MethodView):
             tuple: A tuple containing the newly created request and
             the HTTP status code.
         """
-        request_data = request.get_json()
-        # Check if request_data["household_id"] is already in requests
-        for request_key in requests.values():
-            if(
-                request_data["household_id"] == request_key["household_id"]
-            ):
-                abort(
-                    400,
-                    message="Request already exists for this household"
-                )
-        # Check if request_data["household_id"] is in households
-        if request_data["household_id"] not in households:
-            abort(404, message="Household not found")
-        # Create a new request
-        request_id = uuid.uuid4().hex
-        new_request = {
-            "household_id": request_data["household_id"],
-            "request_id": request_id,
-            "amount": request_data["amount"],
-            "status": "pending"
-        }
-        requests[request_id] = new_request
-        return new_request, 201
+        new_request = RequestModel(**request_data)
+        try:
+            db.session.add(new_request)
+            db.session.commit()
+        except SQLAlchemyError:
+            db.session.rollback()
+            abort(500, message="An error occurred while inserting the request.")
+        return {
+        'id': new_request.id,
+        'amount': new_request.amount,
+        'status': new_request.status,
+        'household_id': new_request.household_id
+        }, 201

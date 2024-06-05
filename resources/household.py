@@ -2,8 +2,10 @@ import uuid
 from flask import request
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-from db import households
+from  sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from schemas import HouseholdSchema
+from db import db
+from models.household import HouseholdModel
 
 
 household_blp = Blueprint(
@@ -14,11 +16,11 @@ household_blp = Blueprint(
 
 
 @household_blp.route("/households")
-class HouseholdsList(MethodView):   
+class HouseholdsList(MethodView):
     """
     Represents a collection of households.
     """
-
+    @household_blp.response(200, HouseholdSchema(many=True))
     def get(self):
         """
         Retrieves a list of all households.
@@ -26,10 +28,12 @@ class HouseholdsList(MethodView):
         Returns:
             dict: A dictionary containing the list of households.
         """
-        return {"households": list(households.values())}
+        households = HouseholdModel.query.all()
+        return households
 
     @household_blp.arguments(HouseholdSchema)
-    def post(self):
+    @household_blp.response(201, HouseholdSchema)
+    def post(self, household_data):
         """
         Create a new household with the provided data.
 
@@ -41,26 +45,25 @@ class HouseholdsList(MethodView):
             HTTPException: If the request data is missing required keys or
             if the household already exists.
         """
-        household_data = request.get_json()
-        # Check if household_data["area"] is already in households
-        for household_key in households.values():
-            if(
-                household_data["area"] == household_key["area"]
-                and household_data["address"] == household_key["address"]
-            ):
-                abort(
-                    400,
-                    message="Household already exists"
-                )
-        # Create a new household
-        household_id = uuid.uuid4().hex
-        new_household = {
-            "area": household_data["area"],
-            "address": household_data["address"],
-            "household_id": household_id
-            }
-        households[household_id] = new_household
-        return new_household, 201
+        new_household = HouseholdModel(**household_data)
+        try:
+            db.session.add(new_household)
+            db.session.commit()
+        except IntegrityError:
+            abort(
+                400,
+                message="A household with the same area and address already exists."
+            )
+        except SQLAlchemyError:
+            db.session.rollback()
+            abort(500, message="An error occurred while inserting the household.")
+        
+        return {
+            'id': new_household.id,
+            'area': new_household.area,
+            'address': new_household.address
+        }, 201
+
 
 
 @household_blp.route("/households/<string:household_id>")
@@ -69,6 +72,7 @@ class Household(MethodView):
     Represents a single household.
     """
 
+    @household_blp.response(200, HouseholdSchema)
     def get(self, household_id):
         """
         Retrieve a household by its ID.
@@ -82,7 +86,5 @@ class Household(MethodView):
         Raises:
             404: If the household is not found.
         """
-        try:
-            return households[household_id]
-        except KeyError:
-            abort(404, message="Household not found")
+        household = HouseholdModel.query.get_or_404(household_id)
+        return household
