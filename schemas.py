@@ -20,3 +20,9 @@ class RequestSchema(PlainRequestSchema):
 
 class HouseholdSchema(PlainHouseholdSchema):
     requests = fields.Nested(PlainRequestSchema, many=True, dump_only=True)
+
+
+class UserSchema(Schema):
+    id = fields.Str(dump_only=True)
+    username = fields.Str(required=True)
+    password = fields.Str(required=True, load_only=True)
