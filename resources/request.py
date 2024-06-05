@@ -14,25 +14,8 @@ request_blp = Blueprint(
     )
 
 
-@request_blp.route("/requests/<string:request_id>")
+@request_blp.route("/requests")
 class Request(MethodView):
-    @request_blp.response(200, RequestSchema)
-    def get(self, request_id):
-        """
-        Retrieve a request by its ID.
-
-        Args:
-            request_id (int): The ID of the request to retrieve.
-
-        Returns:
-            dict: The request object.
-
-        Raises:
-            NotFound: If the request with the given ID is not found.
-        """
-        req = RequestModel.query.get_or_404(request_id)
-        return req
-
     @request_blp.arguments(RequestSchema)
     def post(self, request_data):
         """
@@ -49,12 +32,32 @@ class Request(MethodView):
         try:
             db.session.add(new_request)
             db.session.commit()
-        except SQLAlchemyError:
+        except SQLAlchemyError as e:
             db.session.rollback()
-            abort(500, message="An error occurred while inserting the request.")
+            abort(500, message=str(e))
         return {
         'id': new_request.id,
         'amount': new_request.amount,
         'status': new_request.status,
         'household_id': new_request.household_id
         }, 201
+
+
+@request_blp.route("/requests/<int:request_id>")
+class RequestDetails(MethodView):
+    @request_blp.response(200, RequestSchema)
+    def get(self, request_id):
+        """
+        Retrieve a request by its ID.
+
+        Args:
+            request_id (int): The ID of the request to retrieve.
+
+        Returns:
+            dict: The request object.
+
+        Raises:
+            NotFound: If the request with the given ID is not found.
+        """
+        req = RequestModel.query.get_or_404(request_id)
+        return req

@@ -48,4 +48,4 @@ class UserLogin(MethodView):
             abort(401, message="Invalid username or password")
 
         access_token = create_access_token(identity=user.id)
-        return {"access_token": access_token}, 200
+        return {"access_token": access_token}, 201
